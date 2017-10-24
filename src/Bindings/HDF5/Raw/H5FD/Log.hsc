@@ -1,4 +1,6 @@
 #include <bindings.h>
+-- TODO : appears to be necessary in 1.10.x.  Check backwards compatibility
+#include <H5Ipublic.h>
 #include <H5FDlog.h>
 
 -- |The POSIX unbuffered file driver using only the HDF5 public
@@ -58,12 +60,12 @@ import Foreign.Ptr.Conventions
 -- * Functions
 
 -- |Initialize this driver by registering the driver with the library.
--- 
+--
 -- > hid_t H5FD_log_init(void);
 #ccall H5FD_log_init, IO <hid_t>
 
 -- |Shut down the VFD.
--- 
+--
 -- > void H5FD_log_term(void);
 #ccall H5FD_log_term, IO ()
 
@@ -73,4 +75,3 @@ import Foreign.Ptr.Conventions
 --
 -- > herr_t H5Pset_fapl_log(hid_t fapl_id, const char *logfile, unsigned flags, size_t buf_size);
 #ccall H5Pset_fapl_log, <hid_t> -> CString -> CUInt -> <size_t> -> IO <herr_t>
-

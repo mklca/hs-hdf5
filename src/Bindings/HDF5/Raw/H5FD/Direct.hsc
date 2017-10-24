@@ -1,4 +1,6 @@
 #include <bindings.h>
+-- TODO : appears to be necessary in 1.10.x.  Check backwards compatibility
+#include <H5Ipublic.h>
 #include <H5FDcore.h>
 
 -- |The Direct I/O file driver forces the data to be written to
@@ -33,12 +35,12 @@ import Foreign.Ptr.Conventions
 #num CBSIZE_DEF
 
 -- |Initialize this driver by registering the driver with the library.
--- 
+--
 -- > hid_t H5FD_direct_init(void);
 #ccall H5FD_direct_init, IO <hid_t>
 
 -- |Shut down the VFD.
--- 
+--
 -- > void H5FD_direct_term(void);
 #ccall H5FD_direct_term, IO ()
 

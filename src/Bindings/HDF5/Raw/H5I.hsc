@@ -61,15 +61,14 @@ import Foreign.Ptr.Conventions
 -- |number of library types
 #num H5I_NTYPES
 
--- TODO: I think HId_t should be parameterised over the element type and 
--- possibly also dimensionality of the dataset
 -- |Type of atoms to return to users
-newtype HId_t = HId_t Int32 deriving (Storable, Eq, Ord)
+newtype HId_t = HId_t (#type hid_t) deriving (Storable, Eq, Ord)
 
+-- TODO: Show assumes Int32 but it is Int64 in v1.10.x
 instance Show HId_t where
     showsPrec p (HId_t x) = showParen (p>10)
         ( showString "HId_t 0x"
-        . showString 
+        . showString
             [ intToDigit (fromIntegral digit)
             | place <- [bitSize x - 4, bitSize x - 8 .. 0]
             , let mask = 0xf `shiftL` place
@@ -92,7 +91,7 @@ type H5I_free_t        a = FunPtr (In a -> IO HErr_t)
 
 -- |Type of the function to compare objects & keys
 type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
-   
+
 -- |Registers an 'object' in a 'type' and returns an ID for it.
 -- This routine does _not_ check for unique-ness of the objects,
 -- if you register an object twice, you will get two different
@@ -100,47 +99,47 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 -- type is unique.  IDs are created by getting a unique number
 -- for the type the ID is in and incorporating the type into
 -- the ID which is returned to the user.
--- 
+--
 -- Return:	Success:	New object id.
 --  	Failure:	Negative
--- 
+--
 -- > hid_t H5Iregister(H5I_type_t type, const void *object);
 #ccall H5Iregister , <H5I_type_t> -> In a -> IO <hid_t>
 
 -- |Find an object pointer for the specified ID, verifying that
 -- it is in a particular type.
--- 
+--
 -- On success, returns a non-null object pointer associated with the
 -- specified ID.
 -- On failure, returns NULL.
--- 
+--
 -- > void *H5Iobject_verify(hid_t id, H5I_type_t id_type);
 #ccall H5Iobject_verify , <hid_t> -> <H5I_type_t> -> IO (Ptr a)
 
 -- |Removes the specified ID from its type, first checking that the
 -- type of the ID and the type type are the same.
--- 
+--
 -- On success, returns a pointer to the object that was removed, the
 -- same pointer which would have been found by calling 'h5i_object'.
 -- On failure, returns NULL.
--- 
+--
 -- > void *H5Iremove_verify(hid_t id, H5I_type_t id_type);
 #ccall H5Iremove_verify , <hid_t> -> <H5I_type_t> -> IO (Ptr a)
 
 -- |Retrieves the number of references outstanding for a type.
 -- Returns negative on failure.
--- 
+--
 -- > H5I_type_t H5Iget_type(hid_t id);
 #ccall H5Iget_type , <hid_t> -> IO <H5I_type_t>
 
 -- |Obtains the file ID given an object ID.  User has to close this ID.
 -- Returns a negative value on failure.
--- 
+--
 -- > hid_t H5Iget_file_id(hid_t id);
 #ccall H5Iget_file_id , <hid_t> -> IO <hid_t>
 
 -- |Gets a name of an object from its ID.
--- 
+--
 -- If 'name' is non-NULL then write up to 'size' bytes into that
 -- buffer and always return the length of the entry name.
 -- Otherwise 'size' is ignored and the function does not store the name,
@@ -149,43 +148,43 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 -- is unchanged and the function returns a negative value.
 -- If a zero is returned for the name's length, then there is no name
 -- associated with the ID.
--- 
+--
 -- > ssize_t H5Iget_name(hid_t id, char *name/*out*/, size_t size);
 #ccall H5Iget_name, <hid_t> -> OutArray CChar -> <size_t> -> IO <ssize_t>
 
 -- |Increments the number of references outstanding for an ID.
--- 
--- On success, returns the new reference count.  On failure, returns 
+--
+-- On success, returns the new reference count.  On failure, returns
 -- a negative value.
--- 
+--
 -- > int H5Iinc_ref(hid_t id);
 #ccall H5Iinc_ref, <hid_t> -> IO CInt
 
 -- |Decrements the number of references outstanding for an ID.
 -- If the reference count for an ID reaches zero, the object
 -- will be closed.
--- 
--- On success, returns the new reference count.  On failure, returns 
+--
+-- On success, returns the new reference count.  On failure, returns
 -- a negative value.
--- 
+--
 -- > int H5Idec_ref(hid_t id);
 #ccall H5Idec_ref, <hid_t> -> IO CInt
 
 -- |Retrieves the number of references outstanding for an ID.
 -- Returns a negative value on failure.
--- 
+--
 -- > int H5Iget_ref(hid_t id);
 #ccall H5Iget_ref, <hid_t> -> IO CInt
 
 -- |Creates a new type of ID's to give out.  A specific number
--- ('reserved') of type entries may be reserved to enable \"constant\" 
--- values to be handed out which are valid IDs in the type, but which 
+-- ('reserved') of type entries may be reserved to enable \"constant\"
+-- values to be handed out which are valid IDs in the type, but which
 -- do not map to any data structures and are not allocated dynamically
--- later.  'hash_size' is the minimum hash table size to use for the 
+-- later.  'hash_size' is the minimum hash table size to use for the
 -- type.  'free_func' is called with an object pointer when the object
 -- is removed from the type.
 --
--- On success, returns the type ID of the new type.  
+-- On success, returns the type ID of the new type.
 -- On failure, returns 'h5i_BADID'.
 --
 -- > H5I_type_t H5Iregister_type(size_t hash_size, unsigned reserved, H5I_free_t free_func);
@@ -193,7 +192,7 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 
 -- |Removes all objects from the type, calling the free
 -- function for each object regardless of the reference count.
--- 
+--
 -- Returns non-negative on success, negative on failure.
 --
 -- > herr_t H5Iclear_type(H5I_type_t type, hbool_t force);
@@ -210,10 +209,10 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 #ccall H5Idestroy_type, <H5I_type_t> -> IO <herr_t>
 
 -- |Increments the number of references outstanding for an ID type.
--- 
--- On success, returns the new reference count.  On failure, returns 
+--
+-- On success, returns the new reference count.  On failure, returns
 -- a negative value.
--- 
+--
 -- > int H5Iinc_type_ref(H5I_type_t type);
 #ccall H5Iinc_type_ref, <H5I_type_t> -> IO CInt
 
@@ -223,18 +222,18 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 -- their reference counts.  Destroying IDs involves calling
 -- the free-func for each ID's object and then adding the ID
 -- struct to the ID free list.
--- 
+--
 -- Returns the number of references to the type on success; a
 -- return value of 0 means that the type will have to be
 -- re-initialized before it can be used again (and should probably
 -- be set to H5I_UNINIT).
--- 
+--
 -- > int H5Idec_type_ref(H5I_type_t type);
 #ccall H5Idec_type_ref, <H5I_type_t> -> IO CInt
 
 -- |Retrieves the number of references outstanding for a type.
 -- Returns a negative value on failure.
--- 
+--
 -- > int H5Iget_type_ref(H5I_type_t type);
 #ccall H5Iget_type_ref, <H5I_type_t> -> IO CInt
 
@@ -247,15 +246,15 @@ type H5I_search_func_t a = FunPtr (In a -> HId_t -> In a -> IO CInt)
 -- Limitation:  Currently there is no way to start searching from where a
 -- previous search left off.
 --
--- Returns the first object in the type for which 'func' returns 
--- non-zero.  Returns NULL if 'func' returned zero for every object in 
+-- Returns the first object in the type for which 'func' returns
+-- non-zero.  Returns NULL if 'func' returned zero for every object in
 -- the type.
 --
 -- > void *H5Isearch(H5I_type_t type, H5I_search_func_t func, void *key);
 #ccall H5Isearch, <H5I_type_t> -> <H5I_search_func_t> a -> In a -> IO (Ptr a)
 
--- |Returns the number of members in a type.  The public interface 
--- throws an error if the supplied type does not exist.  This is 
+-- |Returns the number of members in a type.  The public interface
+-- throws an error if the supplied type does not exist.  This is
 -- different than the private interface, which will just return 0.
 --
 -- Returns zero on success, negative on failure.

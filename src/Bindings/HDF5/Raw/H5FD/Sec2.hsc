@@ -1,4 +1,6 @@
 #include <bindings.h>
+-- TODO : appears to be necessary in 1.10.x.  Check backwards compatibility
+#include <H5Ipublic.h>
 #include <H5FDcore.h>
 
 -- |The POSIX unbuffered file driver using only the HDF5 public
@@ -19,12 +21,12 @@ import Bindings.HDF5.Raw.H5I
     = unsafePerformIO (#mangle_ident "H5FD_sec2_init")
 
 -- |Initialize this driver by registering the driver with the library.
--- 
+--
 -- > hid_t H5FD_sec2_init(void);
 #ccall H5FD_sec2_init, IO <hid_t>
 
 -- |Shut down the VFD.
--- 
+--
 -- > void H5FD_sec2_term(void);
 #ccall H5FD_sec2_term, IO ()
 
@@ -33,4 +35,3 @@ import Bindings.HDF5.Raw.H5I
 --
 -- > herr_t H5Pset_fapl_sec2(hid_t fapl_id);
 #ccall H5Pset_fapl_sec2, <hid_t> -> IO <herr_t>
-

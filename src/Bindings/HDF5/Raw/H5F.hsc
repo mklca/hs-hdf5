@@ -108,12 +108,16 @@ import Foreign.Ptr.Conventions
 -- |if there are opened objects, close them first, then close file
 #newtype_const H5F_close_degree_t, H5F_CLOSE_STRONG
 
--- |Current "global" information about file 
+-- |Current "global" information about file
 -- (just size info currently)
 #starttype H5F_info_t
 
 -- |Superblock extension size
+#if H5_VERSION_GE(1,10,0)
+#field super.super_ext_size,  <hsize_t>
+#else
 #field super_ext_size,  <hsize_t>
+#endif
 
 -- |Shared object header message header size
 #field sohm.hdr_size,   <hsize_t>
@@ -162,8 +166,9 @@ import Foreign.Ptr.Conventions
 -- |Use the latest possible format available for storing objects
 #newtype_const H5F_libver_t, H5F_LIBVER_LATEST
 
-#if H5_VERSION_GE(1,8,6)
-    
+-- H5F_LIBVER_18 is not defined for v1.10.x
+#if H5_VERSION_GE(1,8,6) && !H5_VERSION_GE(1,10,0)
+
 -- |Use version 1.8 format for storing objects
 #newtype_const H5F_libver_t, H5F_LIBVER_18
 
@@ -186,7 +191,7 @@ import Foreign.Ptr.Conventions
 -- both reading and writing.  All flags may be combined with the
 -- bit-wise OR operator (@ .|. @ from "Data.Bits") to change the
 -- behavior of the file create call.
--- 
+--
 -- The more complex behaviors of a file's creation and access
 -- are controlled through the file-creation and file-access
 -- property lists.  The value of 'h5p_DEFAULT' for a template
@@ -194,11 +199,11 @@ import Foreign.Ptr.Conventions
 -- values for the appropriate template.
 --
 -- See also: "Bindings.HDF5.Raw.H5F" for the list of supported flags.
--- "Bindings.HDF5.Raw.H5P" for the list of file creation and file 
+-- "Bindings.HDF5.Raw.H5P" for the list of file creation and file
 -- access properties.
 --
 -- On success, returns a file ID.  On failure, returns a negative value.
--- 
+--
 -- > hid_t  H5Fcreate(const char *filename, unsigned flags,
 -- >        hid_t create_plist, hid_t access_plist);
 #ccall H5Fcreate, CString -> CUInt -> <hid_t> -> <hid_t> -> IO <hid_t>
@@ -226,7 +231,7 @@ import Foreign.Ptr.Conventions
 -- anywhere and no files are mounted on it.
 --
 -- On success, returns a file ID.  On failure, returns a negative value.
--- 
+--
 -- > hid_t  H5Freopen(hid_t file_id);
 #ccall H5Freopen, <hid_t> -> IO <hid_t>
 
@@ -265,7 +270,7 @@ import Foreign.Ptr.Conventions
 -- specified file.
 --
 -- NOTE: If you are going to overwrite information in the copied
--- property list that was previously opened and assigned to the 
+-- property list that was previously opened and assigned to the
 -- property list, then you must close it before overwriting the values.
 --
 -- On success, returns an Object ID for a copy of the file access
@@ -276,9 +281,9 @@ import Foreign.Ptr.Conventions
 
 -- |Public API to retrieve the file's 'intent' flags passed
 -- during 'h5f_open'.
--- 
+--
 -- Returns non-negative on success / negative on failure
--- 
+--
 -- > herr_t H5Fget_intent(hid_t file_id, unsigned * intent);
 #ccall H5Fget_intent, <hid_t> -> Out CUInt -> IO <herr_t>
 
@@ -300,29 +305,29 @@ import Foreign.Ptr.Conventions
 -- |Returns a pointer to the file handle of the low-level file driver.
 --
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fget_vfd_handle(hid_t file_id, hid_t fapl, void **file_handle);
 #ccall H5Fget_vfd_handle, <hid_t> -> <hid_t> -> Out (Ptr CFile) -> IO <herr_t>
 
 -- |Mount file 'child_id' onto the group specified by 'loc_id' and
 -- 'name' using mount properties 'plist_id'.
--- 
+--
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fmount(hid_t loc, const char *name, hid_t child, hid_t plist);
 #ccall H5Fmount, <hid_t> -> CString -> <hid_t> -> <hid_t> -> IO <herr_t>
 
 -- |Given a mount point, dissassociate the mount point's file
 -- from the file mounted there.  Do not close either file.
--- 
+--
 -- The mount point can either be the group in the parent or the
 -- root group of the mounted file (both groups have the same
 -- name).  If the mount point was opened before the mount then
 -- it's the group in the parent, but if it was opened after the
 -- mount then it's the root group of the child.
--- 
+--
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Funmount(hid_t loc, const char *name);
 #ccall H5Funmount, <hid_t> -> CString -> IO <herr_t>
 
@@ -337,40 +342,40 @@ import Foreign.Ptr.Conventions
 -- to learn the true size of the underlying file.
 --
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fget_filesize(hid_t file_id, hsize_t *size);
 #ccall H5Fget_filesize, <hid_t> -> Out <hsize_t> -> IO <herr_t>
 
 #if H5_VERSION_GE(1,8,9)
 
--- |If a buffer is provided (via the buf_ptr argument) and is 
+-- |If a buffer is provided (via the buf_ptr argument) and is
 -- big enough (size in buf_len argument), load *buf_ptr with
--- an image of the open file whose ID is provided in the 
+-- an image of the open file whose ID is provided in the
 -- file_id parameter, and return the number of bytes copied
 -- to the buffer.
 --
 -- If the buffer exists, but is too small to contain an image
 -- of the indicated file, return a negative number.
 --
--- Finally, if no buffer is provided, return the size of the 
--- buffer needed.  This value is simply the eoa of the target 
+-- Finally, if no buffer is provided, return the size of the
+-- buffer needed.  This value is simply the eoa of the target
 -- file.
 --
 -- Note that any user block is skipped.
 --
--- Also note that the function may not be used on files 
+-- Also note that the function may not be used on files
 -- opened with either the split/multi file driver or the
 -- family file driver.
 --
--- In the former case, the sparse address space makes the 
+-- In the former case, the sparse address space makes the
 -- get file image operation impractical, due to the size of
 -- the image typically required.
 --
 -- In the case of the family file driver, the problem is
 -- the driver message in the super block, which will prevent
 -- the image being opened with any driver other than the
--- family file driver -- which negates the purpose of the 
--- operation.  This can be fixed, but no resources for 
+-- family file driver -- which negates the purpose of the
+-- operation.  This can be fixed, but no resources for
 -- this now.
 --
 -- Return:      Success:        Bytes copied / number of bytes needed.
@@ -383,13 +388,13 @@ import Foreign.Ptr.Conventions
 
 -- |Retrieves the current automatic cache resize configuration
 -- from the metadata cache, and return it in 'config_ptr'.
--- 
+--
 -- Note that the 'version' field of 'config_ptr' must be correctly
 -- filled in by the caller.  This allows us to adapt for
 -- obsolete versions of the structure.
 --
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fget_mdc_config(hid_t file_id,
 -- >        H5AC_cache_config_t * config_ptr);
 #ccall H5Fget_mdc_config, <hid_t> -> Out <H5AC_cache_config_t> -> IO <herr_t>
@@ -399,7 +404,7 @@ import Foreign.Ptr.Conventions
 -- 'H5AC_cache_config_t' pointed to by 'config_ptr'.
 --
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fset_mdc_config(hid_t file_id,
 -- >        H5AC_cache_config_t * config_ptr);
 #ccall H5Fset_mdc_config, <hid_t> -> In <H5AC_cache_config_t> -> IO <herr_t>
@@ -408,9 +413,9 @@ import Foreign.Ptr.Conventions
 -- This rate is the overall hit rate since the last time
 -- the hit rate statistics were reset either manually or
 -- automatically.
--- 
+--
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Fget_mdc_hit_rate(hid_t file_id, double * hit_rate_ptr);
 #ccall H5Fget_mdc_hit_rate, <hid_t> -> Out CDouble -> IO <herr_t>
 
@@ -419,7 +424,7 @@ import Foreign.Ptr.Conventions
 -- cache associated with the specified file.  If any of
 -- the ptr parameters are NULL, the associated datum is
 -- not returned.
--- 
+--
 -- Returns non-negative on success, negative on failure
 --
 -- > herr_t H5Fget_mdc_size(hid_t file_id,
@@ -433,13 +438,13 @@ import Foreign.Ptr.Conventions
 -- be obtained via the 'h5f_get_mdc_hit_rate' call.  Note
 -- that this statistic will also be reset once per epoch
 -- by the automatic cache resize code if it is enabled.
--- 
+--
 -- It is probably a bad idea to call this function unless
 -- you are controlling cache size from your program instead
 -- of using our cache size control code.
 --
 -- Returns non-negative on success, negative on failure
--- 
+--
 -- > herr_t H5Freset_mdc_hit_rate_stats(hid_t file_id);
 #ccall H5Freset_mdc_hit_rate_stats, <hid_t> -> IO <herr_t>
 
@@ -450,32 +455,33 @@ import Foreign.Ptr.Conventions
 -- just returning the number of characters required to store the name.
 -- If an error occurs then the buffer pointed to by 'name' (NULL or non-NULL)
 -- is unchanged and the function returns a negative value.
--- 
+--
 -- Note:  This routine returns the name that was used to open the file,
 -- not the actual name after resolving symlinks, etc.
--- 
--- Returns the length of the file name (_not_ the length of the data 
+--
+-- Returns the length of the file name (_not_ the length of the data
 -- copied into the output buffer) on success, or a negative value on failure.
--- 
+--
 -- > ssize_t H5Fget_name(hid_t obj_id, char *name, size_t size);
 #ccall H5Fget_name, <hid_t> -> OutArray CChar -> <size_t> -> IO <ssize_t>
 
 -- |#. Get storage size for superblock extension if there is one
--- 
+--
 --  #. Get the amount of btree and heap storage for entries in the SOHM table if there is one.
--- 
+--
 --  #. Consider success when there is no superblock extension and/or SOHM table
 --
 -- Returns non-negative on success, negative on failure
 --
 -- > herr_t H5Fget_info(hid_t obj_id, H5F_info_t *bh_info);
+-- TODO : H5get_info is now a macro, we need to define H5Fget_info1 and H5Fget_info2
 #ccall H5Fget_info, <hid_t> -> Out H5F_info_t -> IO <herr_t>
 
 #if H5_VERSION_GE(1,8,7)
 -- |Releases the external file cache associated with the
 -- provided file, potentially closing any cached files
 -- unless they are held open from somewhere else.
--- 
+--
 -- Returns non-negative on success, negative on failure
 --
 -- > herr_t H5Fclear_elink_file_cache(hid_t file_id);

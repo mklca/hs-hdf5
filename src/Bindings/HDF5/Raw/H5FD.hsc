@@ -116,8 +116,8 @@ type H5FD_mem_t = H5F_mem_t
 -- TODO: create statically-allocated constant versions of these?
 -- TODO: explain more in haddock docs about how to use these
 
--- |Initialize a free-list map which maps all types of allocation requests 
--- to a single free list.  This is useful for drivers that don't really care 
+-- |Initialize a free-list map which maps all types of allocation requests
+-- to a single free list.  This is useful for drivers that don't really care
 -- about keeping different requests segregated in the underlying file and which
 -- want to make most efficient reuse of freed memory.  The use of the
 -- 'h5fd_MEM_SUPER' free list is arbitrary.
@@ -140,12 +140,12 @@ type H5FD_mem_t = H5F_mem_t
 -- the library will attempt to cache metadata as it is written to the file
 -- and build up a larger block of metadata to eventually pass to the VFL
 -- 'write' routine.
--- 
--- Distinguish between updating the metadata accumulator on writes 
+--
+-- Distinguish between updating the metadata accumulator on writes
 -- ('h5fd_FEAT_ACCUMULATE_METADATA_WRITE') and reads
 -- ('h5fd_FEAT_ACCUMULATE_METADATA_READ').  This is particularly (perhaps
 -- only, even) important for MPI-I/O where we guarantee that writes are
--- collective, but reads may not be.  If we were to allow the metadata 
+-- collective, but reads may not be.  If we were to allow the metadata
 -- accumulator to be written during a read operation, the application would
 -- hang.
 #num H5FD_FEAT_ACCUMULATE_METADATA
@@ -155,9 +155,9 @@ type H5FD_mem_t = H5F_mem_t
 -- |Defining the 'h5fd_FEAT_DATA_SIEVE' for a VFL driver means that
 -- the library will attempt to cache raw data as it is read from/written to
 -- a file in a "data seive" buffer.  See Rajeev Thakur's papers:
--- 
+--
 --  * <http://www.mcs.anl.gov/~thakur/papers/romio-coll.ps.gz>
--- 
+--
 --  * <http://www.mcs.anl.gov/~thakur/papers/mpio-high-perf.ps.gz>
 #num H5FD_FEAT_DATA_SIEVE
 
@@ -167,7 +167,7 @@ type H5FD_mem_t = H5F_mem_t
 #num H5FD_FEAT_AGGREGATE_SMALLDATA
 
 #if H5_VERSION_GE(1,8,4)
-    
+
 -- |Defining the 'h5fd_FEAT_IGNORE_DRVRINFO' for a VFL driver means that
 -- the library will ignore the driver info that is encoded in the file
 -- for the VFL driver.  (This will cause the driver info to be eliminated
@@ -178,7 +178,11 @@ type H5FD_mem_t = H5F_mem_t
 -- the library will mark the superblock dirty when the file is opened
 -- R/W.  This will cause the driver info to be re-encoded when the file
 -- is flushed/closed.
+#if H5_VERSION_GE(1,10,0)
+#num H5FD_FEAT_DIRTY_DRVRINFO_LOAD
+#else
 #num H5FD_FEAT_DIRTY_SBLK_LOAD
+#endif
 
 #endif
 
@@ -303,19 +307,19 @@ type H5FD_mem_t = H5F_mem_t
 #newtype_const H5FD_file_image_op_t, H5FD_FILE_IMAGE_OP_FILE_RESIZE
 #newtype_const H5FD_file_image_op_t, H5FD_FILE_IMAGE_OP_FILE_CLOSE
 
--- |TODO: wrap this.  not tackling it now, because there are a lot of 
+-- |TODO: wrap this.  not tackling it now, because there are a lot of
 -- pointer types to pin down.
 data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 
 -- /* Define structure to hold file image callbacks */
 -- typedef struct {
---     void   *(*image_malloc)(size_t size, H5FD_file_image_op_t file_image_op, 
+--     void   *(*image_malloc)(size_t size, H5FD_file_image_op_t file_image_op,
 --                             void *udata);
 --     void   *(*image_memcpy)(void *dest, const void *src, size_t size,
 --                             H5FD_file_image_op_t file_image_op, void *udata);
---     void   *(*image_realloc)(void *ptr, size_t size, 
+--     void   *(*image_realloc)(void *ptr, size_t size,
 --                             H5FD_file_image_op_t file_image_op, void *udata);
---     herr_t  (*image_free)(void *ptr, H5FD_file_image_op_t file_image_op, 
+--     herr_t  (*image_free)(void *ptr, H5FD_file_image_op_t file_image_op,
 --                           void *udata);
 --     void   *(*udata_copy)(void *udata);
 --     herr_t  (*udata_free)(void *udata);
@@ -342,7 +346,7 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- driver.
 --
 -- Returns non-negative on success, negative on failure.
--- 
+--
 -- > herr_t H5FDunregister(hid_t driver_id);
 #ccall H5FDunregister, <hid_t> -> IO <herr_t>
 
@@ -352,9 +356,9 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- file should expect to handle format addresses in the range [0,
 -- 'maxaddr'] (if 'maxaddr' is 'hADDR_UNDEF' then the caller
 -- doesn't care about the address range).
--- 
+--
 -- Possible values for the 'flags' bits are:
--- 
+--
 -- ['h5f_ACC_RDWR']
 --  Open the file for read and write access. If
 --  this bit is not set then open the file for
@@ -363,16 +367,16 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 --  access is requested by the library (the
 --  library will never attempt to write to a file
 --  which it opened with only read access).
--- 
+--
 -- ['h5f_ACC_CREAT']
 --  Create the file if it doesn't already exist.
 --  However, see 'h5f_ACC_EXCL' below.
--- 
+--
 -- ['h5f_ACC_TRUNC']
 --  Truncate the file if it already exists. This
 --  is equivalent to deleting the file and then
 --  creating a new empty file.
--- 
+--
 -- ['h5f_ACC_EXCL']
 --  When used with 'h5f_ACC_CREAT', if the file
 --  already exists then the open should fail.
@@ -380,20 +384,20 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 --  some file drivers (e.g., sec2 across nfs) and
 --  will contain a race condition when used to
 --  perform file locking.
--- 
+--
 -- The 'maxaddr' is the maximum address which will be requested by
 -- the library during an allocation operation. Usually this is
 -- the same value as the 'maxaddr' field of the class structure,
 -- but it can be smaller if the driver is being used under some
 -- other driver.
--- 
+--
 -- Note that when the driver 'open' callback gets control that
 -- the public part of the file struct (the 'H5FD_t' part) will be
 -- incomplete and will be filled in after that callback returns.
--- 
+--
 -- On success, returns a pointer to a new file driver struct.
 -- On failure, returns 'nullPtr'.
--- 
+--
 -- > H5FD_t *H5FDopen(const char *name, unsigned flags, hid_t fapl_id,
 -- >        haddr_t maxaddr);
 #ccall H5FDopen, CString -> CUInt -> <hid_t> -> <haddr_t> -> IO (Ptr <H5FD_t>)
@@ -403,7 +407,7 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- Note that the public part of the file struct (the 'H5FD_t' part)
 -- will be all zero during the driver close callback like during
 -- the 'open' callback.
--- 
+--
 -- Returns non-negative on success, negative on failure.
 --
 -- > herr_t H5FDclose(H5FD_t *file);
@@ -416,7 +420,7 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- Returns an integer greater than, less than, or equal to zero,
 -- indicating the corresponding ordering.
 --
--- Must never fail. If both file handles are invalid then they 
+-- Must never fail. If both file handles are invalid then they
 -- compare equal. If one file handle is invalid then it compares
 -- less than the other.  If both files belong to the same driver
 -- and the driver doesn't provide a comparison callback then the
@@ -427,9 +431,9 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 
 -- |Query a VFL driver for its feature flags. (listed in
 -- "Bindings.HDF5.Raw.H5FD")
--- 
+--
 -- Returns non-negative on success, negative on failure.
--- 
+--
 -- > int H5FDquery(const H5FD_t *f, unsigned long *flags);
 #ccall H5FDquery, In <H5FD_t> -> Out CULong -> IO CInt
 
@@ -439,28 +443,28 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- to the free list map provided by the driver. The free list
 -- array has one entry for each request type and the value of
 -- that array element can be one of four possibilities:
--- 
+--
 -- * It can be the constant 'h5fd_MEM_DEFAULT' (or zero) which
 --   indicates that the identity mapping is used. In other
 --   words, the request type maps to its own free list.
--- 
+--
 -- * It can be the request type itself, which has the same
 --   effect as the 'h5fd_MEM_DEFAULT' value above.
--- 
+--
 -- * It can be the ID for another request type, which
 --   indicates that the free list for the specified type
 --   should be used instead.
--- 
+--
 -- * It can be the constant 'h5fd_MEM_NOLIST' which means that
 --   no free list should be used for this type of request.
--- 
+--
 -- If the request cannot be satisfied from a free list then
 -- either the driver's 'alloc' callback is invoked (if one was
 -- supplied) or the end-of-address marker is extended. The
 -- 'alloc' callback is always called with the same arguments as
 -- the 'h5fd_alloc'.
 --
--- Returns the format address of the new file memory, or the 
+-- Returns the format address of the new file memory, or the
 -- undefined address 'hADDR_UNDEF' on failure.
 --
 -- > haddr_t H5FDalloc(H5FD_t *file, H5FD_mem_t type, hid_t dxpl_id, hsize_t size);
@@ -474,7 +478,7 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- callback is invoked (if defined) or the memory is leaked.
 --
 -- Returns non-negative on success, negative on failure.
--- 
+--
 -- > herr_t H5FDfree(H5FD_t *file, H5FD_mem_t type, hid_t dxpl_id,
 -- >                        haddr_t addr, hsize_t size);
 #ccall H5FDfree, In <H5FD_t> -> <H5FD_mem_t> -> <hid_t> -> <haddr_t> -> <hsize_t> -> IO <herr_t>
@@ -488,19 +492,19 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- |Set the end-of-address marker for the file. The 'addr' is the
 -- address of the first byte past the last allocated byte of the
 -- file. This function is called from two places:
--- 
+--
 --  1. It is called after an existing file is opened in order to
 --     \"allocate\" enough space to read the superblock and then
 --     to \"allocate\" the entire hdf5 file based on the contents
 --     of the superblock.
--- 
+--
 --  2. It is called during file memory allocation if the
 --     allocation request cannot be satisfied from the free list
 --     and the driver didn't supply an allocation callback.
--- 
+--
 -- Returns non-negative on success, or negative on failure.  If the
 -- operation fails, it will do so with no side-effects.
--- 
+--
 -- > herr_t H5FDset_eoa(H5FD_t *file, H5FD_mem_t type, haddr_t eoa);
 #ccall H5FDset_eoa, In <H5FD_t> -> <H5FD_mem_t> -> <haddr_t> -> IO <herr_t>
 
@@ -509,23 +513,23 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- function is called after an existing file is opened in order
 -- for the library to learn the true size of the underlying file
 -- and to determine whether the hdf5 data has been truncated.
--- 
+--
 -- It is also used when a file is first opened to learn whether
 -- the file is empty or not.
--- 
+--
 -- It is permissible for the driver to return the maximum address
 -- for the file size if the file is not empty.
--- 
+--
 -- On failure, returns 'hADDR_UNDEF'
--- 
+--
 -- > haddr_t H5FDget_eof(H5FD_t *file);
 #ccall H5FDget_eof, In <H5FD_t> -> IO <haddr_t>
 
 -- |Returns a pointer to the file handle of low-level virtual
 -- file driver.
--- 
+--
 -- returns non-negative on success, negative otherwise.
--- 
+--
 -- > herr_t H5FDget_vfd_handle(H5FD_t *file, hid_t fapl, void**file_handle);
 #ccall H5FDget_vfd_handle, In <H5FD_t> -> <hid_t> -> Out (Ptr a) -> IO <herr_t>
 
@@ -533,13 +537,13 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- according to the data transfer property list 'dxpl_id' (which may
 -- be the constant 'h5p_DEFAULT'). The result is written into the
 -- buffer 'buf'.
--- 
+--
 -- Returns non-negative on success.  The read result is written into
 -- the 'buf' buffer which should be allocated by the caller.
--- 
--- On failure, returns a negative value and the contents of 'buf' 
+--
+-- On failure, returns a negative value and the contents of 'buf'
 -- is undefined.
---  
+--
 -- > herr_t H5FDread(H5FD_t *file, H5FD_mem_t type, hid_t dxpl_id,
 -- >        haddr_t addr, size_t size, void *buf/*out*/);
 #ccall H5FDread, In <H5FD_t> -> <H5FD_mem_t> -> <hid_t> -> <haddr_t> -> <size_t> -> OutArray a -> IO <herr_t>
@@ -550,7 +554,7 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 -- buffer 'buf'.
 --
 -- Returns non-negative on success, negative on failure.
--- 
+--
 -- > herr_t H5FDwrite(H5FD_t *file, H5FD_mem_t type, hid_t dxpl_id,
 -- >        haddr_t addr, size_t size, const void *buf);
 #ccall H5FDwrite, In <H5FD_t> -> <H5FD_mem_t> -> <hid_t> -> <haddr_t> -> <size_t> -> InArray a -> IO <herr_t>
@@ -565,9 +569,9 @@ data H5FD_file_image_callbacks_t = H5FD_file_image_callbacks_t
 
 #if H5_VERSION_GE(1,8,2)
 -- |Notify driver to truncate the file back to the allocated size.
--- 
+--
 -- Returns non-negative on success, negative on failure.
--- 
+--
 -- > herr_t H5FDtruncate(H5FD_t *file, hid_t dxpl_id, hbool_t closing);
 #ccall H5FDtruncate, In <H5FD_t> -> <hid_t> -> <hbool_t> -> IO <herr_t>
 #endif
