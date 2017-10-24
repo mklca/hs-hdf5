@@ -56,9 +56,14 @@ import Bindings.HDF5.Error
 import Bindings.HDF5.Raw.H5A
 import Bindings.HDF5.Raw.H5I
 import Bindings.HDF5.Raw.H5P
+import Bindings.HDF5.Raw.H5O
+import Bindings.HDF5.Raw.H5T
+import Bindings.HDF5.Raw.Util
+import Foreign.Ptr.Conventions
 import Bindings.HDF5.Object
 import Bindings.HDF5.Datatype.Internal
 import Bindings.HDF5.Dataspace
+
 
 -- * The Attribute type
 
@@ -87,9 +92,50 @@ createAttribute loc name dtype dspace =
     h5a_create2 (hid loc) cname (hid dtype) (hid dspace) h5p_DEFAULT h5p_DEFAULT
 
 
-openAttribute = undefined
-closeAttribute = undefined
+openAttribute :: Location loc => loc -> BS.ByteString -> IO Attribute
+openAttribute loc name =
+  fmap Attribute $ withErrorCheck $ BS.useAsCString name $ \cname ->
+    -- AAPL is not currently used
+    h5a_open (hid loc) cname h5p_DEFAULT
+
+closeAttribute :: Attribute -> IO ()
+closeAttribute (Attribute attr_id) = withErrorCheck_ $ h5a_close attr_id
+
 readAttribute = undefined
+writeAttribute = undefined
 iterateAttributes = undefined
-deleteAttribute = undefined
-getAttributeInfo = undefined
+
+deleteAttribute :: Location loc => loc -> BS.ByteString -> IO ()
+deleteAttribute loc name = withErrorCheck_ $ BS.useAsCString name $ \cname ->
+  h5a_delete (hid loc) cname
+
+
+{-
+typedef struct {
+    hbool_t             corder_valid;
+    H5O_msg_crt_idx_t   corder;
+    H5T_cset_t          cset;
+    hsize_t             data_size;
+} H5A_info_t;
+-}
+
+newtype H5O_msg_crt_idx = H5O_msg_crt_idx H5O_msg_crt_idx_t
+newtype H5T_cset = H5T_cset H5T_cset_t
+
+data AttributeInfo = AttributeInfo
+  { attrCOrderValid :: !Bool
+  , attrCOrder      :: !H5O_msg_crt_idx
+  , attrCSet        :: !H5T_cset
+  , attrDataSize    :: !HSize
+  }
+
+-- TODO : higher-level representation of AttributeInfo contents
+readAttributeInfo :: H5A_info_t -> AttributeInfo
+readAttributeInfo (H5A_info_t a b c d) =
+  AttributeInfo (hboolToBool a) (H5O_msg_crt_idx b) (H5T_cset c) (HSize d)
+
+getAttributeInfo :: Attribute -> IO AttributeInfo
+getAttributeInfo (Attribute attr_id) =
+  fmap readAttributeInfo $
+    withOut_ $ \info -> withErrorCheck_ $
+                          h5a_get_info attr_id info

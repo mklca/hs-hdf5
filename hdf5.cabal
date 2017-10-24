@@ -36,6 +36,7 @@ Library
                       , Bindings.HDF5.Group
                       , Bindings.HDF5.Link
                       , Bindings.HDF5.Object
+                      , Bindings.HDF5.Attribute
                       , Bindings.HDF5.PropertyList
                       , Bindings.HDF5.PropertyList.DAPL
                       , Bindings.HDF5.PropertyList.DCPL
@@ -105,8 +106,10 @@ Library
                       , primitive
                       , transformers
 
-  include-dirs:         include, /usr/local/include
-  extra-lib-dirs:       /usr/local/lib
+--  include-dirs:         include, /usr/local/include
+  include-dirs:         include, /Users/spascoe/.nix-profile/include
+--  extra-lib-dirs:       /usr/local/lib
+  extra-lib-dirs:       /Users/spascoe/.nix-profile/lib
   extra-libraries:      hdf5
 
 
