@@ -12,11 +12,9 @@ This interface does not aim to cover all of HDF5, at least not right now.  If th
 Installation
 -------------
 
-First, you'll need to install the [low level bindings](https://github.com/mokus0/bindings-hdf5) - see that project's [README](https://github.com/mokus0/bindings-hdf5/blob/master/README.md) for instructions.  Once you've done that, this package can be installed using cabal:
+This package can be installed with stack:
 
-    git clone https://github.com/mokus0/hs-hdf5.git
-    cd hs-hdf5
-    cabal install
+    stack install
 
 Usage
 ------

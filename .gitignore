@@ -24,3 +24,4 @@ dist
 *.chs.h
 *_stub.h
 
+/.stack-work/

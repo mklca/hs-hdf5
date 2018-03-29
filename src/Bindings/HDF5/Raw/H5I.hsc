@@ -75,7 +75,7 @@ instance Show HId_t where
         ( showString "HId_t 0x"
         . showString
             [ intToDigit (fromIntegral digit)
-            | place <- [bitSize x - 4, bitSize x - 8 .. 0]
+            | place <- [finiteBitSize x - 4, finiteBitSize x - 8 .. 0]
             , let mask = 0xf `shiftL` place
             , let digit = ((x .&. mask) `shiftR` place) .&. 0xf
             ]
