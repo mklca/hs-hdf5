@@ -1,30 +1,4 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-
-
-  h5l_get_info_by_idx           	[ FAIL ]
-  h5l_iterate                   	[  OK  ]
-  h5l_register                  	[ FAIL ]
-  h5l_iterate_by_name           	[  OK  ]
-  h5l_unpack_elink_val          	[ FAIL ]
-  h5l_get_val_by_idx            	[ FAIL ]
-  h5l_create_external           	[  OK  ]
-  h5l_exists                    	[  OK  ]
-  h5l_move                      	[  OK  ]
-  h5l_create_ud                 	[ FAIL ]
-  h5l_create_hard               	[  OK  ]
-  h5l_is_registered             	[ FAIL ]
-  h5l_get_name_by_idx           	[ FAIL ]
-  h5l_create_soft               	[  OK  ]
-  h5l_copy                      	[  OK  ]
-  h5l_get_val                   	[  OK  ]
-  h5l_visit                     	[  OK  ]
-  h5l_get_info                  	[  OK  ]
-  h5l_delete_by_idx             	[ FAIL ]
-  h5l_visit_by_name             	[  OK  ]
-  h5l_delete                    	[  OK  ]
-  h5l_unregister                	[ FAIL ]
-
--}
 module Bindings.HDF5.Link
     ( createHardLink
     , createSoftLink
@@ -37,16 +11,16 @@ module Bindings.HDF5.Link
     , deleteLink
 
     , LinkType(..)
-    , LinkInfo(..)
-    , getLinkInfo
+    , LinkInfo1(..)
+    , getLinkInfo1
 
     , getSymLinkVal
 
-    , iterateLinks
-    , iterateLinksByName
+    , iterateLinks1
+    , iterateLinksByName1
 
-    , visitLinks
-    , visitLinksByName
+    , visitLinks1
+    , visitLinksByName1
     ) where
 
 import Bindings.HDF5.Core
@@ -141,7 +115,7 @@ linkTypeFromCode c
     | otherwise                 = error ("Unknown link type: " ++ show c)
 
 
-data LinkInfo = LinkInfo
+data LinkInfo1 = LinkInfo1
     { linkType          :: LinkType
     , linkCOrderValid   :: Bool
     , linkCOrder        :: Int64
@@ -150,23 +124,23 @@ data LinkInfo = LinkInfo
     , linkValSize       :: CSize
     } deriving (Eq, Ord, Read, Show)
 
-readLinkInfo :: H5L_info_t -> LinkInfo
-readLinkInfo i  = LinkInfo
-    { linkType          = linkTypeFromCode (h5l_info_t'type i)
-    , linkCOrderValid   = hboolToBool (h5l_info_t'corder_valid i)
-    , linkCOrder        = h5l_info_t'corder i
-    , linkCSet          = cSetFromCode (h5l_info_t'cset i)
-    , linkAddress       = HAddr (h5l_info_t'u'address i)
-    , linkValSize       = h5l_info_t'u'val_size i
+readLinkInfo1 :: H5L_info1_t -> LinkInfo1
+readLinkInfo1 i  = LinkInfo1
+    { linkType          = linkTypeFromCode (h5l_info1_t'type i)
+    , linkCOrderValid   = hboolToBool (h5l_info1_t'corder_valid i)
+    , linkCOrder        = h5l_info1_t'corder i
+    , linkCSet          = cSetFromCode (h5l_info1_t'cset i)
+    , linkAddress       = HAddr (h5l_info1_t'u'address i)
+    , linkValSize       = h5l_info1_t'u'val_size i
     }
 
-getLinkInfo :: Location loc => loc -> BS.ByteString -> Maybe LAPL -> IO LinkInfo
-getLinkInfo loc name lapl =
-    fmap readLinkInfo $
+getLinkInfo1 :: Location loc => loc -> BS.ByteString -> Maybe LAPL -> IO LinkInfo1
+getLinkInfo1 loc name lapl =
+    fmap readLinkInfo1 $
         withOut_ $ \info ->
             withErrorCheck_ $
                 BS.useAsCString name $ \cname ->
-                    h5l_get_info (hid loc) cname info (maybe h5p_DEFAULT hid lapl)
+                    h5l_get_info1 (hid loc) cname info (maybe h5p_DEFAULT hid lapl)
 
 getSymLinkVal :: Location loc => loc -> BS.ByteString -> Maybe LAPL -> IO BS.ByteString
 getSymLinkVal loc name mb_lapl =
@@ -174,9 +148,9 @@ getSymLinkVal loc name mb_lapl =
         let lapl = maybe h5p_DEFAULT hid mb_lapl
         info <- withOut_ $ \info ->
             withErrorCheck_ $
-                    h5l_get_info (hid loc) cname info lapl
+                    h5l_get_info1 (hid loc) cname info lapl
 
-        let n = h5l_info_t'u'val_size info
+        let n = h5l_info1_t'u'val_size info
 
         buf <- mallocBytes (fromIntegral n)
 
@@ -191,7 +165,7 @@ foreign import ccall "wrapper" wrap_H5L_iterate1_t
     :: (HId_t -> CString -> In H5L_info1_t -> InOut a -> IO HErr_t)
     -> IO (FunPtr (HId_t -> CString -> In H5L_info1_t -> InOut a -> IO HErr_t))
 
-with_iterate1_t :: (Group -> BS.ByteString -> LinkInfo -> IO HErr_t)
+with_iterate1_t :: (Group -> BS.ByteString -> LinkInfo1 -> IO HErr_t)
      -> (H5L_iterate1_t () -> InOut () -> IO HErr_t)
      -> IO HErr_t
 with_iterate1_t op f = do
@@ -200,7 +174,7 @@ with_iterate1_t op f = do
     op1 <- wrap_H5L_iterate1_t $ \grp name (In link) _opData -> do
         name1 <- BS.packCString name
         link1 <- peek link
-        result <- try (op (uncheckedFromHId grp) name1 (readLinkInfo link1))
+        result <- try (op (uncheckedFromHId grp) name1 (readLinkInfo1 link1))
         case result of
             Left exc -> do
                 writeIORef exception1 (Just exc)
@@ -216,16 +190,16 @@ with_iterate1_t op f = do
 
         else return result
 
-iterateLinks :: Location t => t -> IndexType -> IterOrder -> Maybe HSize -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO HSize
-iterateLinks loc indexType order startIndex op =
+iterateLinks1 :: Location t => t -> IndexType -> IterOrder -> Maybe HSize -> (Group -> BS.ByteString -> LinkInfo1 -> IO HErr_t) -> IO HSize
+iterateLinks1 loc indexType order startIndex op =
     fmap HSize $
         withInOut_ (maybe 0 hSize startIndex) $ \ioStartIndex ->
             withErrorCheck_ $
                 with_iterate1_t op $ \iop opData ->
                     h5l_iterate (hid loc) (indexTypeCode indexType) (iterOrderCode order) ioStartIndex iop opData
 
-iterateLinksByName :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe HSize -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO HSize
-iterateLinksByName loc groupName indexType order startIndex lapl op =
+iterateLinksByName1 :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe HSize -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo1 -> IO HErr_t) -> IO HSize
+iterateLinksByName1 loc groupName indexType order startIndex lapl op =
     fmap HSize $
         withInOut_ (maybe 0 hSize startIndex) $ \ioStartIndex ->
             withErrorCheck_ $
@@ -233,14 +207,14 @@ iterateLinksByName loc groupName indexType order startIndex lapl op =
                     BS.useAsCString groupName $ \cgroupName ->
                         h5l_iterate_by_name (hid loc) cgroupName (indexTypeCode indexType) (iterOrderCode order) ioStartIndex iop opData (maybe h5p_DEFAULT hid lapl)
 
-visitLinks :: Location t => t -> IndexType -> IterOrder -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO ()
-visitLinks loc indexType order op =
+visitLinks1 :: Location t => t -> IndexType -> IterOrder -> (Group -> BS.ByteString -> LinkInfo1 -> IO HErr_t) -> IO ()
+visitLinks1 loc indexType order op =
     withErrorCheck_ $
         with_iterate1_t op $ \iop opData ->
             h5l_visit (hid loc) (indexTypeCode indexType) (iterOrderCode order) iop opData
 
-visitLinksByName :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO ()
-visitLinksByName loc groupName indexType order lapl op =
+visitLinksByName1 :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo1 -> IO HErr_t) -> IO ()
+visitLinksByName1 loc groupName indexType order lapl op =
     withErrorCheck_ $
         with_iterate1_t op $ \iop opData ->
             BS.useAsCString groupName $ \cgroupName ->

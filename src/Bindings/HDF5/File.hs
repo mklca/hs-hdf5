@@ -21,8 +21,8 @@ module Bindings.HDF5.File
     , getFileCreatePlist
     , getFileAccessPlist
 
-    , FileInfo(..)
-    , getFileInfo
+    , FileInfo1(..)
+    , getFileInfo1
     , getFileIntent
     , getFileName
     , getFileObjCount
@@ -248,7 +248,7 @@ getFileInfo1 obj =
     fmap readFileInfo $
         withOut_ $ \info ->
             withErrorCheck $
-                h5f_get_info (hid obj) info
+                h5f_get_info1 (hid obj) info
 
 getFileIntent :: File -> IO [AccFlags]
 getFileIntent (File file_id) =
