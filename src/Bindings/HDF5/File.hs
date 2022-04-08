@@ -234,17 +234,17 @@ getFileAccessPlist (File file_id) =
         withErrorCheck $
             h5f_get_access_plist file_id
 
-data FileInfo = FileInfo
-    { superExtSize  :: !HSize
-    , sohmHdrSize   :: !HSize
-    , sohmMsgsInfo  :: !IH_Info
+data FileInfo1 = FileInfo1
+    { superExtSize1  :: !HSize
+    , sohmHdrSize1   :: !HSize
+    , sohmMsgsInfo1  :: !IH_Info
     } deriving (Eq, Ord, Read, Show)
 
-readFileInfo :: H5F_info_t -> FileInfo
-readFileInfo (H5F_info_t a b (H5_ih_info_t c d)) = FileInfo (HSize a) (HSize b) (IH_Info (HSize c) (HSize d))
+readFileInfo :: H5F_info1_t -> FileInfo1
+readFileInfo (H5F_info1_t a b (H5_ih_info_t c d)) = FileInfo1 (HSize a) (HSize b) (IH_Info (HSize c) (HSize d))
 
-getFileInfo :: Object obj => obj -> IO FileInfo
-getFileInfo obj =
+getFileInfo1 :: Object obj => obj -> IO FileInfo1
+getFileInfo1 obj =
     fmap readFileInfo $
         withOut_ $ \info ->
             withErrorCheck $

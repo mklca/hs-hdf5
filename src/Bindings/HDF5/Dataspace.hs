@@ -136,7 +136,8 @@ encodeDataspace (Dataspace space_id) =
     withOutByteString $ \buf bufSz ->
         withInOut_ bufSz $ \ioBufSz ->
             withErrorCheck_ $
-                h5s_encode space_id buf ioBufSz
+                -- FIXME: Uses deprecated H5SEncode1 API entry
+                h5s_encode1 space_id buf ioBufSz
 
 decodeDataspace :: BS.ByteString -> IO Dataspace
 decodeDataspace bs = BS.unsafeUseAsCString bs $ \buf ->

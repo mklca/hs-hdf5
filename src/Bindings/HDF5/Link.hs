@@ -187,17 +187,17 @@ getSymLinkVal loc name mb_lapl =
         BS.packCStringLen (buf, fromIntegral n)
 
 
-foreign import ccall "wrapper" wrap_H5L_iterate_t
-    :: (HId_t -> CString -> In H5L_info_t -> InOut a -> IO HErr_t)
-    -> IO (FunPtr (HId_t -> CString -> In H5L_info_t -> InOut a -> IO HErr_t))
+foreign import ccall "wrapper" wrap_H5L_iterate1_t
+    :: (HId_t -> CString -> In H5L_info1_t -> InOut a -> IO HErr_t)
+    -> IO (FunPtr (HId_t -> CString -> In H5L_info1_t -> InOut a -> IO HErr_t))
 
-with_iterate_t :: (Group -> BS.ByteString -> LinkInfo -> IO HErr_t)
-     -> (H5L_iterate_t () -> InOut () -> IO HErr_t)
+with_iterate1_t :: (Group -> BS.ByteString -> LinkInfo -> IO HErr_t)
+     -> (H5L_iterate1_t () -> InOut () -> IO HErr_t)
      -> IO HErr_t
-with_iterate_t op f = do
+with_iterate1_t op f = do
     exception1 <- newIORef Nothing :: IO (IORef (Maybe SomeException))
 
-    op1 <- wrap_H5L_iterate_t $ \grp name (In link) _opData -> do
+    op1 <- wrap_H5L_iterate1_t $ \grp name (In link) _opData -> do
         name1 <- BS.packCString name
         link1 <- peek link
         result <- try (op (uncheckedFromHId grp) name1 (readLinkInfo link1))
@@ -221,7 +221,7 @@ iterateLinks loc indexType order startIndex op =
     fmap HSize $
         withInOut_ (maybe 0 hSize startIndex) $ \ioStartIndex ->
             withErrorCheck_ $
-                with_iterate_t op $ \iop opData ->
+                with_iterate1_t op $ \iop opData ->
                     h5l_iterate (hid loc) (indexTypeCode indexType) (iterOrderCode order) ioStartIndex iop opData
 
 iterateLinksByName :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe HSize -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO HSize
@@ -229,19 +229,19 @@ iterateLinksByName loc groupName indexType order startIndex lapl op =
     fmap HSize $
         withInOut_ (maybe 0 hSize startIndex) $ \ioStartIndex ->
             withErrorCheck_ $
-                with_iterate_t op $ \iop opData ->
+                with_iterate1_t op $ \iop opData ->
                     BS.useAsCString groupName $ \cgroupName ->
                         h5l_iterate_by_name (hid loc) cgroupName (indexTypeCode indexType) (iterOrderCode order) ioStartIndex iop opData (maybe h5p_DEFAULT hid lapl)
 
 visitLinks :: Location t => t -> IndexType -> IterOrder -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO ()
 visitLinks loc indexType order op =
     withErrorCheck_ $
-        with_iterate_t op $ \iop opData ->
+        with_iterate1_t op $ \iop opData ->
             h5l_visit (hid loc) (indexTypeCode indexType) (iterOrderCode order) iop opData
 
 visitLinksByName :: Location t => t -> BS.ByteString -> IndexType -> IterOrder -> Maybe LAPL -> (Group -> BS.ByteString -> LinkInfo -> IO HErr_t) -> IO ()
 visitLinksByName loc groupName indexType order lapl op =
     withErrorCheck_ $
-        with_iterate_t op $ \iop opData ->
+        with_iterate1_t op $ \iop opData ->
             BS.useAsCString groupName $ \cgroupName ->
                 h5l_visit_by_name (hid loc) cgroupName (indexTypeCode indexType) (iterOrderCode order) iop opData (maybe h5p_DEFAULT hid lapl)
